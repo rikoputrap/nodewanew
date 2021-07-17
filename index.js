@@ -123,6 +123,7 @@ io.on("connection", function (socket) { return __awaiter(void 0, void 0, void 0,
                                 noPel_1 = noPel_1.replace("62", "0");
                                 return [4 /*yield*/, axios_1["default"]
                                         .post(process.env.APIMEMBER, JSON.stringify({
+                                        token: process.env.APITOKEN,
                                         name: namaPel_1,
                                         phone: noPel_1,
                                         city: domPel_1

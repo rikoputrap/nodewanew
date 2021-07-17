@@ -87,6 +87,7 @@ io.on("connection", async (socket) => {
                     .post(
                         process.env.APIMEMBER,
                         JSON.stringify({
+                        token: process.env.APITOKEN,
                         name: namaPel,
                         phone: noPel,
                         city: domPel,
