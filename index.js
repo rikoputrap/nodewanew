@@ -38,128 +38,110 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var baileys_1 = require("@adiwajshing/baileys");
 var fs = require("fs");
-var socket_io_1 = require("socket.io");
-var express = require("express");
-var http = require("http");
 var axios_1 = require("axios");
-var qrcode = require("qrcode");
-var app = express();
-var server = http.createServer(app);
-var io = new socket_io_1.Server(server);
-var port = 3000;
 require('dotenv').config();
-app.get('/', function (req, res) {
-    res.sendFile(__dirname + "/index.html");
-});
-server.listen(port, function () { return console.log("Listening on http://localhost:" + port); });
-io.on("connection", function (socket) { return __awaiter(void 0, void 0, void 0, function () {
-    var conn;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                console.log('io connected');
-                conn = new baileys_1.WAConnection();
-                conn.autoReconnect = baileys_1.ReconnectMode.onConnectionLost;
-                conn.logger.level = 'debug';
-                conn.connectOptions.maxRetries = 10;
-                conn.on("qr", function (qr) {
-                    qrcode.toDataURL(qr, function (err, url) {
-                        socket.emit("qr", url);
-                        socket.emit("message", "Scan Qrcode Diatas!");
-                    });
-                });
-                fs.existsSync('./auth_info.json') && conn.loadAuthInfo('./auth_info.json');
-                conn.on("open", function () {
-                    socket.emit('message', "Berhasil terotentikasi");
-                    var authInfo = conn.base64EncodedAuthInfo();
+function connectToWhatsapp() {
+    return __awaiter(this, void 0, void 0, function () {
+        var conn, authInfo;
+        var _this = this;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    conn = new baileys_1.WAConnection();
+                    conn.autoReconnect = baileys_1.ReconnectMode.onConnectionLost;
+                    conn.logger.level = 'debug';
+                    conn.connectOptions.maxRetries = 10;
+                    fs.existsSync('./auth_info.json') && conn.loadAuthInfo('./auth_info.json');
+                    return [4 /*yield*/, conn.connect()];
+                case 1:
+                    _a.sent();
+                    authInfo = conn.base64EncodedAuthInfo();
                     fs.writeFileSync('./auth_info.json', JSON.stringify(authInfo, null, '\t'));
-                });
-                return [4 /*yield*/, conn.connect()];
-            case 1:
-                _a.sent();
-                conn.on('chat-update', function (chat) { return __awaiter(void 0, void 0, void 0, function () {
-                    var m, messageStubType, messageContent, sender, messageType, text, namaPel_1, domPel_1, noAwal, noPel_1;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0:
-                                if (chat.presences) {
-                                    Object.values(chat.presences).forEach(function (presence) { return console.log(presence.name + "'s presence is " + presence.lastKnownPresence + " in " + chat.jid); });
-                                }
-                                if (chat.imgUrl) {
-                                    console.log('imgUrl of chat changed ', chat.imgUrl);
-                                    return [2 /*return*/];
-                                }
-                                if (!chat.hasNewMessage) {
-                                    if (chat.messages) {
-                                        console.log('updated message: ', chat.messages.first);
+                    conn.on('chat-update', function (chat) { return __awaiter(_this, void 0, void 0, function () {
+                        var m, messageStubType, messageContent, sender, messageType, text, namaPel_1, domPel_1, noAwal, noPel_1;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    if (chat.presences) {
+                                        Object.values(chat.presences).forEach(function (presence) { return console.log(presence.name + "'s presence is " + presence.lastKnownPresence + " in " + chat.jid); });
                                     }
-                                    return [2 /*return*/];
-                                }
-                                m = chat.messages.all()[0];
-                                messageStubType = baileys_1.WA_MESSAGE_STUB_TYPES[m.messageStubType] || 'MESSAGE';
-                                console.log('got notification of type: ' + messageStubType);
-                                messageContent = m.message;
-                                if (!messageContent)
-                                    return [2 /*return*/];
-                                if (m.key.fromMe) {
-                                    console.log('relayed my own message');
-                                    return [2 /*return*/];
-                                }
-                                sender = m.key.remoteJid;
-                                messageType = Object.keys(messageContent)[0];
-                                if (!(messageType === baileys_1.MessageType.text)) return [3 /*break*/, 4];
-                                text = m.message.conversation;
-                                if (!(text == '!ping')) return [3 /*break*/, 2];
-                                return [4 /*yield*/, conn.sendMessage(sender, '!pong', baileys_1.MessageType.text)];
-                            case 1:
-                                _a.sent();
-                                return [3 /*break*/, 4];
-                            case 2:
-                                if (!text.startsWith('!daftar')) return [3 /*break*/, 4];
-                                namaPel_1 = text.split("@")[1];
-                                domPel_1 = text.split("@")[2];
-                                noAwal = sender;
-                                noPel_1 = noAwal.split("@")[0];
-                                noPel_1 = noPel_1.replace("62", "0");
-                                return [4 /*yield*/, axios_1["default"]
-                                        .post(process.env.APIMEMBER, JSON.stringify({
-                                        token: process.env.APITOKEN,
-                                        name: namaPel_1,
-                                        phone: noPel_1,
-                                        city: domPel_1
-                                    }), {
-                                        headers: {
-                                            "Content-Type": "application/json"
+                                    if (chat.imgUrl) {
+                                        console.log('imgUrl of chat changed ', chat.imgUrl);
+                                        return [2 /*return*/];
+                                    }
+                                    if (!chat.hasNewMessage) {
+                                        if (chat.messages) {
+                                            console.log('updated message: ', chat.messages.first);
                                         }
-                                    })
-                                        .then(function (res) {
-                                        console.log(res.data);
-                                        // cek data user sudah ada apa belum
-                                        // res.data.status tergantung dari api
-                                        // error = sudah terdaftar, success = belum terdaftar
-                                        if (res.data.status == "error") {
-                                            var reply = "Yth Bpk/Ibu\n" + res.data.name + "\nJangan khawatir!\nAnda sudah menjadi member kami!\nNantikan promo selanjutnya!\n\nBerikut data anda yg disimpan:\nNama: " + res.data.name + "\nNo Telepon: " + res.data.phone + "\nDomisili: " + res.data.city + "\n\nJangan khawatir!!\nKami sangat menjaga privasi anda!\n";
-                                            conn.sendMessage(sender, reply, baileys_1.MessageType.text);
-                                        }
-                                        else if (res.data.status == "success") {
-                                            var reply = "Yeah selamat!\nBerhasil menjadi member kami!\nNantikan promo selanjutnya!\n\nBerikut data anda yg disimpan:\nNama: " + namaPel_1 + "\nNo Telepon: " + noPel_1 + "\nDomisili: " + domPel_1 + "\n\nJangan khawatir!!\nKami sangat menjaga privasi anda!\n";
-                                            conn.sendMessage(sender, reply, baileys_1.MessageType.text);
-                                        }
-                                    })["catch"](function (error) {
-                                        console.error(error);
-                                    })];
-                            case 3:
-                                _a.sent();
-                                _a.label = 4;
-                            case 4: return [2 /*return*/];
-                        }
+                                        return [2 /*return*/];
+                                    }
+                                    m = chat.messages.all()[0];
+                                    messageStubType = baileys_1.WA_MESSAGE_STUB_TYPES[m.messageStubType] || 'MESSAGE';
+                                    console.log('got notification of type: ' + messageStubType);
+                                    messageContent = m.message;
+                                    if (!messageContent)
+                                        return [2 /*return*/];
+                                    if (m.key.fromMe) {
+                                        console.log('relayed my own message');
+                                        return [2 /*return*/];
+                                    }
+                                    sender = m.key.remoteJid;
+                                    messageType = Object.keys(messageContent)[0];
+                                    if (!(messageType === baileys_1.MessageType.text)) return [3 /*break*/, 4];
+                                    text = m.message.conversation;
+                                    if (!(text == '!ping')) return [3 /*break*/, 2];
+                                    return [4 /*yield*/, conn.sendMessage(sender, '!pong', baileys_1.MessageType.text)];
+                                case 1:
+                                    _a.sent();
+                                    return [3 /*break*/, 4];
+                                case 2:
+                                    if (!text.startsWith('!daftar')) return [3 /*break*/, 4];
+                                    namaPel_1 = text.split("@")[1];
+                                    domPel_1 = text.split("@")[2];
+                                    noAwal = sender;
+                                    noPel_1 = noAwal.split("@")[0];
+                                    noPel_1 = noPel_1.replace("62", "0");
+                                    return [4 /*yield*/, axios_1["default"]
+                                            .post(process.env.APIMEMBER, JSON.stringify({
+                                            token: process.env.APITOKEN,
+                                            name: namaPel_1,
+                                            phone: noPel_1,
+                                            city: domPel_1
+                                        }), {
+                                            headers: {
+                                                "Content-Type": "application/json"
+                                            }
+                                        })
+                                            .then(function (res) {
+                                            console.log(res.data);
+                                            // cek data user sudah ada apa belum
+                                            // res.data.status tergantung dari api
+                                            // error = sudah terdaftar, success = belum terdaftar
+                                            if (res.data.status == "error") {
+                                                var reply = "Yth Bpk/Ibu\n" + res.data.name + "\nJangan khawatir!\nAnda sudah menjadi member kami!\nNantikan promo selanjutnya!\n\nBerikut data anda yg disimpan:\nNama: " + res.data.name + "\nNo Telepon: " + res.data.phone + "\nDomisili: " + res.data.city + "\n\nJangan khawatir!!\nKami sangat menjaga privasi anda!\n";
+                                                conn.sendMessage(sender, reply, baileys_1.MessageType.text);
+                                            }
+                                            else if (res.data.status == "success") {
+                                                var reply = "Yeah selamat!\nBerhasil menjadi member kami!\nNantikan promo selanjutnya!\n\nBerikut data anda yg disimpan:\nNama: " + namaPel_1 + "\nNo Telepon: " + noPel_1 + "\nDomisili: " + domPel_1 + "\n\nJangan khawatir!!\nKami sangat menjaga privasi anda!\n";
+                                                conn.sendMessage(sender, reply, baileys_1.MessageType.text);
+                                            }
+                                        })["catch"](function (error) {
+                                            console.error(error);
+                                        })];
+                                case 3:
+                                    _a.sent();
+                                    _a.label = 4;
+                                case 4: return [2 /*return*/];
+                            }
+                        });
+                    }); });
+                    conn.on('close', function (_a) {
+                        var reason = _a.reason, isReconnecting = _a.isReconnecting;
+                        return (console.log('oh no got disconnected: ' + reason + ', reconnecting: ' + isReconnecting));
                     });
-                }); });
-                conn.on('close', function (_a) {
-                    var reason = _a.reason, isReconnecting = _a.isReconnecting;
-                    return (console.log('oh no got disconnected: ' + reason + ', reconnecting: ' + isReconnecting));
-                });
-                return [2 /*return*/];
-        }
+                    return [2 /*return*/];
+            }
+        });
     });
-}); });
+}
+connectToWhatsapp()["catch"](function (err) { return console.log(err); });

@@ -5,44 +5,23 @@ import {
     ReconnectMode,
 } from "@adiwajshing/baileys"
 import * as fs from 'fs'
-import { Server } from "socket.io"
-import express = require("express")
-import http = require("http")
 import axios from 'axios'
-import qrcode = require("qrcode")
-const app = express();
-const server = http.createServer(app)
-const io = new Server(server)
-const port = 3000;
 
 require('dotenv').config()
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + "/index.html")
-})
-server.listen(port, () => console.log(`Listening on http://localhost:${port}`))
-
-io.on("connection", async (socket) => {
-    console.log('io connected')
+async function connectToWhatsapp() {
     const conn = new WAConnection() 
     conn.autoReconnect = ReconnectMode.onConnectionLost 
     conn.logger.level = 'debug' 
     conn.connectOptions.maxRetries = 10
-    conn.on("qr", (qr) => {
-        qrcode.toDataURL(qr, (err, url) => {
-            socket.emit("qr", url)
-            socket.emit("message", "Scan Qrcode Diatas!")
-        })
-    })
 
     fs.existsSync('./auth_info.json') && conn.loadAuthInfo ('./auth_info.json')
-    conn.on("open", () => {
-        socket.emit('message', "Berhasil terotentikasi")
-        const authInfo = conn.base64EncodedAuthInfo() 
-        fs.writeFileSync('./auth_info.json', JSON.stringify(authInfo, null, '\t')) 
-    })
-
+    
     await conn.connect()
+
+    const authInfo = conn.base64EncodedAuthInfo() 
+    fs.writeFileSync('./auth_info.json', JSON.stringify(authInfo, null, '\t')) 
+
 
     conn.on('chat-update', async chat => {
         if (chat.presences) {
@@ -148,4 +127,6 @@ Kami sangat menjaga privasi anda!
     conn.on('close', ({reason, isReconnecting}) => (
         console.log ('oh no got disconnected: ' + reason + ', reconnecting: ' + isReconnecting)
     ))
-})
+}
+
+connectToWhatsapp().catch((err) => console.log(err))
